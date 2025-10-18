@@ -57,11 +57,13 @@ where tablename = 'orders')
 '''
 
 orders_filtered_dynamic_frame = sparkSqlQuery(glueContext, query = SqlQuery17, mapping = {"orders_fd":fetch_details_dynamic_frame, "orders":orderstable_dynamic_frame}, transformation_ctx = "orders_filtered_dynamic_frame")
+orders_filtered_df = orders_filtered_dynamic_frame.toDF().coalesce(1)
 
+orders_filtered_single_file = DynamicFrame.fromDF(orders_filtered_df, glueContext, "orders_filtered_single_file")
 
 # Script generated for node Amazon S3
-EvaluateDataQuality().process_rows(frame=orders_filtered_dynamic_frame, ruleset=DEFAULT_DATA_QUALITY_RULESET, publishing_options={"dataQualityEvaluationContext": "EvaluateDataQuality_node1760793028063", "enableDataQualityResultsPublishing": True}, additional_options={"dataQualityResultsPublishing.strategy": "BEST_EFFORT", "observations.scope": "ALL"})
-AmazonS3_node1760794692710 = glueContext.write_dynamic_frame.from_options(frame=orders_filtered_dynamic_frame, connection_type="s3", format="glueparquet", connection_options={"path": "s3://retail-fs/landing/", "partitionKeys": []}, format_options={"compression": "snappy"}, transformation_ctx="AmazonS3_node1760794692710")
+EvaluateDataQuality().process_rows(frame=orders_filtered_single_file, ruleset=DEFAULT_DATA_QUALITY_RULESET, publishing_options={"dataQualityEvaluationContext": "EvaluateDataQuality_node1760793028063", "enableDataQualityResultsPublishing": True}, additional_options={"dataQualityResultsPublishing.strategy": "BEST_EFFORT", "observations.scope": "ALL"})
+AmazonS3_node1760794692710 = glueContext.write_dynamic_frame.from_options(frame=orders_filtered_single_file, connection_type="s3", format="glueparquet", connection_options={"path": "s3://retail-fs/landing/", "partitionKeys": []}, format_options={"compression": "snappy"}, transformation_ctx="AmazonS3_node1760794692710")
 
 max_timestamp = orderstable_dynamic_frame.toDF().agg(max("order_last_updated")).collect()[0][0]
 
