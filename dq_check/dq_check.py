@@ -25,13 +25,27 @@ job.init(args['JOB_NAME'], args)
 # Script generated for node Amazon S3
 AmazonS3_node1760800806304 = glueContext.create_dynamic_frame.from_options(format_options={}, connection_type="s3", format="parquet", connection_options={"paths": ["s3://retail-fs/landing/"], "recurse": True}, transformation_ctx="AmazonS3_node1760800806304")
 
+# Script generated for node valid_order_status_lk table
+order_status_lk_dynamic_frame = glueContext.create_dynamic_frame.from_options(
+    connection_type = "postgresql",
+    connection_options = {
+        "useConnectionProperties": "true",
+        "dbtable": "valid_order_status_lk",
+        "connectionName": "Postgresql connection",
+    },
+    transformation_ctx = "order_status_lk_dynamic_frame"
+)
+
 # Script generated for node SQL Query
 SqlQuery0 = '''
 select count(*) as invalid_count from orders_dq
-where order_status not in (
-'ON_HOLD','PAYMENT_REVIEW','PROCESSING','CLOSED','SUSPECTED_FRAUD','COMPLETE','PENDING','CANCELED','PENDING_PAYMENT')
+where order_status not in ( select status_name from valid_order_status_lk)
 '''
-SQLQuery_node1760800811849 = sparkSqlQuery(glueContext, query = SqlQuery0, mapping = {"orders_dq":AmazonS3_node1760800806304}, transformation_ctx = "SQLQuery_node1760800811849")
+
+#SQLQuery_node1760800811849 = sparkSqlQuery(glueContext, query = SqlQuery0, mapping = {"orders_dq":AmazonS3_node1760800806304}, transformation_ctx = "SQLQuery_node1760800811849")
+
+SQLQuery_node1760800811849 = sparkSqlQuery(glueContext, query = SqlQuery0, mapping = {"orders_dq":AmazonS3_node1760800806304, "valid_order_status_lk":order_status_lk_dynamic_frame}, transformation_ctx = "SQLQuery_node1760800811849")
+
 
 invalid_count = SQLQuery_node1760800811849.toDF().collect()[0][0]
 print(f"invalid count = {invalid_count}")
@@ -65,8 +79,6 @@ def move_files(src_folder, dest_folder, archive_folder):
                 # Delete the original file to complete the move operation 
                 s3_client.delete_object(Bucket=bucket_name, Key=source_key)
                 
-                
-                
 if invalid_count > 0: 
     print(f"Found {invalid_count} invalid records. Moving files to 'discarded' folder")
     move_files(landing_folder, discarded_folder, archive_folder)
@@ -75,6 +87,5 @@ else:
     print("No invalid records found. Moving files to 'staging' folder.") 
     move_files(landing_folder, staging_folder, archive_folder)
     print("File movement complete.")
-
 
 job.commit()
