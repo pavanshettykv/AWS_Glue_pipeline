@@ -1,0 +1,41 @@
+{
+  "name" : "data_quality_check",
+  "jobMode" : "SCRIPT",
+  "description" : "",
+  "role" : "arn:aws:iam::157972748495:role/aws-iam-role",
+  "executionProperty" : {
+    "maxConcurrentRuns" : 1
+  },
+  "command" : {
+    "name" : "glueetl",
+    "scriptLocation" : "s3://aws-glue-assets-157972748495-ap-southeast-2/scripts/data_quality_check.py",
+    "pythonVersion" : "3"
+  },
+  "defaultArguments" : {
+    "--enable-metrics" : "true",
+    "--spark-event-logs-path" : "s3://aws-glue-assets-157972748495-ap-southeast-2/sparkHistoryLogs/",
+    "--enable-job-insights" : "true",
+    "--enable-observability-metrics" : "true",
+    "--enable-glue-datacatalog" : "true",
+    "--job-bookmark-option" : "job-bookmark-disable",
+    "--job-language" : "python",
+    "--TempDir" : "s3://aws-glue-assets-157972748495-ap-southeast-2/temporary/"
+  },
+  "connections" : {
+    "connections" : [ "Postgresql connection" ]
+  },
+  "maxRetries" : 0,
+  "allocatedCapacity" : 2,
+  "timeout" : 2880,
+  "maxCapacity" : 2.0,
+  "glueVersion" : "5.0",
+  "numberOfWorkers" : 2,
+  "workerType" : "G.1X",
+  "executionClass" : "STANDARD",
+  "sourceControlDetails" : {
+    "provider" : "GITHUB",
+    "repository" : "AWS_Glue_pipeline",
+    "branch" : "feature",
+    "folder" : "data_quality_check"
+  }
+}
